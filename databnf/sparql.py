@@ -194,6 +194,10 @@ SELECT ?agent ?prop ?value WHERE {
                 infos[ns_prop(prop, self.namespaces)] = value
         return infos
 
+    def execute(self, query):
+        query = autoprefix(query, self.namespaces)
+        return super(DatabnfDatabase, self).execute(query)
+
 
 def ns_prop(uri, namespaces):
     """convert the predicate ``uri`` in a readable qualified name
