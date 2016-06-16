@@ -4,6 +4,7 @@ import logging
 import os
 import os.path as osp
 import json
+import re
 from functools import wraps
 from itertools import chain
 from collections import namedtuple
@@ -210,6 +211,23 @@ def ns_prop(uri, namespaces):
             ns = reverse_ns[ns_uri]
             return u'{}:{}'.format(ns, uri[len(ns_uri):])
     return uri
+
+
+def autoprefix(query, namespaces):
+    """tries to automatically add PREFIX declaration for ``query``
+
+    PREFIX uris are found in ``namespaces``.
+    """
+    done = set()
+    prefix_rgx = re.compile('\s+(\w+):\w+\s+')
+    decl = []
+    for prefix in prefix_rgx.findall(query):
+        if prefix in namespaces and prefix not in done:
+            decl.append('PREFIX {}: <{}>'.format(prefix, namespaces[prefix]))
+            done.add(prefix)
+    if decl:
+        query = '{}\n\n{}'.format('\n'.join(decl), query)
+    return query
 
 
 if __name__ == '__main__':
