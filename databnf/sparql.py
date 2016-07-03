@@ -26,28 +26,36 @@ class Literal(text_type):
         return inst
 
 
-def iter_sparql_results(results):
-    """iterates on results of a SPARQL query saved as json by virtuoso.
+class SparqlRset(object):
 
-    yields:
-       A namedtuple where each attribute maps one of the sparql variable.
-       Values are not postprocessed.
-    """
-    fieldnames = results['head']['vars']
-    SparqlRset = namedtuple('SparqlRset', fieldnames)
-    for rowdef in results['results']['bindings']:
-        # XXX use rdflib.term objects ?
-        data = []
-        for field in fieldnames:
-            if field not in rowdef:
-                fieldvalue = None
-            else:
-                fieldvalue = rowdef[field]['value']
-                if rowdef[field]['type'] == 'literal':
-                    fieldvalue = Literal(fieldvalue,
-                                         lang=rowdef[field].get('xml:lang'))
-            data.append(fieldvalue)
-        yield SparqlRset(*data)
+    def __init__(self, results):
+        self._results = results
+        self.fieldnames = results['head']['vars']
+        self.row_cls = namedtuple('SparqlRsetRow', self.fieldnames)
+
+    def __iter__(self):
+        """iterates on results of a SPARQL query saved as json by virtuoso.
+
+        yields:
+          A namedtuple where each attribute maps one of the sparql variable.
+          Values are not postprocessed.
+        """
+        for rowdef in self._results['results']['bindings']:
+            # XXX use rdflib.term objects ?
+            data = []
+            for field in self.fieldnames:
+                if field not in rowdef:
+                    fieldvalue = None
+                else:
+                    fieldvalue = rowdef[field]['value']
+                    if rowdef[field]['type'] == 'literal':
+                        fieldvalue = Literal(fieldvalue,
+                                             lang=rowdef[field].get('xml:lang'))
+                data.append(fieldvalue)
+            yield self.row_cls(*data)
+
+    def __len__(self):
+        return len(self._results['results']['bindings'])
 
 
 def cacheresults(execute):
@@ -106,7 +114,7 @@ class SPARQLDatabase(object):
 
     def execute(self, query):
         raw_results = self._execute(query)
-        return iter_sparql_results(raw_results)
+        return SparqlRset(raw_results)
 
 
 class DatabnfDatabase(SPARQLDatabase):
