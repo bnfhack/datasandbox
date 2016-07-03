@@ -51,6 +51,9 @@ class SparqlRset(object):
                     if rowdef[field]['type'] == 'literal':
                         fieldvalue = Literal(fieldvalue,
                                              lang=rowdef[field].get('xml:lang'))
+                    if rowdef[field]['type'] == 'typed-literal':
+                        if rowdef[field]['datatype'] == 'http://www.w3.org/2001/XMLSchema#integer':
+                            fieldvalue = int(fieldvalue)
                 data.append(fieldvalue)
             yield self.row_cls(*data)
 
