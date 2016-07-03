@@ -61,7 +61,7 @@ def cacheresults(execute):
         if osp.isfile(cache_filepath):
             with open(cache_filepath) as cache_f:
                 return json.load(cache_f)
-        result = list(execute(self, query))
+        result = execute(self, query)
         with open(cache_filepath, 'w') as cache_f:
             json.dump(result, cache_f, indent=2)
         return result
@@ -92,14 +92,21 @@ class SPARQLDatabase(object):
             os.makedirs(cache_dir)
 
     @cacheresults
-    def execute(self, query):
+    def _execute(self, query):
         self.querier.setQuery(query)
         try:
-            return iter_sparql_results(self.querier.query().convert())
+            return self.querier.query().convert()
         except:
             logging.exception('failed to execute SPARQL query %r',
                               query)
-            return []
+            return {
+                'head': {'vars': ()},
+                'results': {'bindings': ()},
+            }
+
+    def execute(self, query):
+        raw_results = self._execute(query)
+        return iter_sparql_results(raw_results)
 
 
 class DatabnfDatabase(SPARQLDatabase):
