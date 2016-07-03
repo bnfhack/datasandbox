@@ -15,8 +15,10 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 
 try:
     text_type = unicode
+    text_types = (basestring,)
 except NameError:  # py3
     text_type = str
+    text_types = (str,)
 
 
 class Literal(text_type):
@@ -210,6 +212,12 @@ SELECT ?agent ?prop ?value WHERE {
                 infos[prop].append(value)
             else:
                 infos[ns_prop(prop, self.namespaces)] = value
+        if ('skos:altLabel' in infos and
+            isinstance(infos['skos:altLabel'], text_types)):
+            infos['skos:altLabel'] = [infos['skos:altLabel']]
+        if ('foaf:depiction' in infos and
+            isinstance(infos['foaf:depiction'], text_types)):
+            infos['foaf:depiction'] = [infos['foaf:depiction']]
         return infos
 
     def execute(self, query):
