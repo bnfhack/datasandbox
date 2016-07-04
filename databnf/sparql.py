@@ -35,6 +35,23 @@ class SparqlRset(object):
         self.fieldnames = results['head']['vars']
         self.row_cls = namedtuple('SparqlRsetRow', self.fieldnames)
 
+    def _build_row(self, rowdef):
+        # XXX use rdflib.term objects ?
+        data = []
+        for field in self.fieldnames:
+            if field not in rowdef:
+                fieldvalue = None
+            else:
+                fieldvalue = rowdef[field]['value']
+                if rowdef[field]['type'] == 'literal':
+                    fieldvalue = Literal(fieldvalue,
+                                         lang=rowdef[field].get('xml:lang'))
+                if rowdef[field]['type'] == 'typed-literal':
+                    if rowdef[field]['datatype'] == 'http://www.w3.org/2001/XMLSchema#integer':
+                        fieldvalue = int(fieldvalue)
+            data.append(fieldvalue)
+        return self.row_cls(*data)
+
     def __iter__(self):
         """iterates on results of a SPARQL query saved as json by virtuoso.
 
@@ -43,24 +60,13 @@ class SparqlRset(object):
           Values are not postprocessed.
         """
         for rowdef in self._results['results']['bindings']:
-            # XXX use rdflib.term objects ?
-            data = []
-            for field in self.fieldnames:
-                if field not in rowdef:
-                    fieldvalue = None
-                else:
-                    fieldvalue = rowdef[field]['value']
-                    if rowdef[field]['type'] == 'literal':
-                        fieldvalue = Literal(fieldvalue,
-                                             lang=rowdef[field].get('xml:lang'))
-                    if rowdef[field]['type'] == 'typed-literal':
-                        if rowdef[field]['datatype'] == 'http://www.w3.org/2001/XMLSchema#integer':
-                            fieldvalue = int(fieldvalue)
-                data.append(fieldvalue)
-            yield self.row_cls(*data)
+            yield self._build_row(rowdef)
 
     def __len__(self):
         return len(self._results['results']['bindings'])
+
+    def __getitem__(self, idx):
+        return self._build_row(self._results['results']['bindings'][idx])
 
 
 def cacheresults(execute):
