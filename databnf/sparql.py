@@ -75,7 +75,7 @@ def cacheresults(execute):
     def _execute(self, query):
         if not self.cache_dir:
             return execute(self, query)
-        sha = hashlib.sha256(query).hexdigest()
+        sha = hashlib.sha256(query.encode('utf-8')).hexdigest()
         cache_filepath = osp.join(self.cache_dir, '{}.json'.format(sha))
         if osp.isfile(cache_filepath):
             with open(cache_filepath) as cache_f:
@@ -262,7 +262,7 @@ def autoprefix(query, namespaces):
             decl.append('PREFIX {}: <{}>'.format(prefix, namespaces[prefix]))
             done.add(prefix)
     if decl:
-        query = '{}\n\n{}'.format('\n'.join(decl), query)
+        query = u'{}\n\n{}'.format('\n'.join(decl), query)
     return query
 
 
