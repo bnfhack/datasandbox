@@ -254,7 +254,7 @@ def autoprefix(query, namespaces):
 
     PREFIX uris are found in ``namespaces``.
     """
-    done = set()
+    done = set(re.findall(r'PREFIX (\w+):\s*(?:<.*?>)', query))
     prefix_rgx = re.compile('\s+(\w+):\w+\s+')
     decl = []
     for prefix in prefix_rgx.findall(query):
